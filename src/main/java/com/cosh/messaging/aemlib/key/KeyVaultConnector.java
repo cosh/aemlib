@@ -1,4 +1,4 @@
-package com.cosh.messaging.aemlib;
+package com.cosh.messaging.aemlib.key;
 
 import com.microsoft.aad.adal4j.AuthenticationContext;
 import com.microsoft.aad.adal4j.AuthenticationResult;
@@ -7,8 +7,10 @@ import com.microsoft.azure.keyvault.authentication.KeyVaultCredentials;
 import com.microsoft.azure.keyvault.models.KeyBundle;
 import com.microsoft.azure.keyvault.models.SecretBundle;
 import com.microsoft.azure.keyvault.KeyVaultClient;
+import com.microsoft.azure.keyvault.requests.SetSecretRequest;
 import com.microsoft.rest.credentials.ServiceClientCredentials;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.net.MalformedURLException;
 import java.util.concurrent.ExecutionException;
@@ -18,23 +20,19 @@ import java.util.concurrent.Future;
 
 public class KeyVaultConnector {
 
-    private KeyVaultClient client;
+    private KeyVaultClient _client;
 
-    private String _vaultBase;
+    private final KeyVaultConfig _config;
 
-    private String _clientId;
-    private String _clientSecret;
-
-    public KeyVaultConnector(String vaultBase, String clientId, String clientSecret)
+    @Autowired
+    public KeyVaultConnector(KeyVaultConfig config)
     {
-        this._vaultBase = vaultBase;
-        this._clientId = clientId;
-        this._clientSecret = clientSecret;
+        this._config = config;
     }
 
     public void connect() {
 
-        client = new KeyVaultClient(createCredentials());
+        _client = new KeyVaultClient(createCredentials());
     }
 
     private ServiceClientCredentials createCredentials() {
@@ -70,8 +68,8 @@ public class KeyVaultConnector {
             Future<AuthenticationResult> future = null;
 
             //Acquires token based on client ID and client secret.
-            if (StringUtils.isNotBlank(_clientId) && StringUtils.isNotBlank(_clientSecret)) {
-                ClientCredential credentials = new ClientCredential(_clientId, _clientSecret);
+            if (StringUtils.isNotBlank(_config.getClientId()) && StringUtils.isNotBlank(_config.getClientSecret())) {
+                ClientCredential credentials = new ClientCredential(_config.getClientId(), _config.getClientSecret());
                 future = context.acquireToken(resource, credentials, null);
             }
 
@@ -86,11 +84,29 @@ public class KeyVaultConnector {
         return result;
     }
 
-    public SecretBundle getSecret(String secretName, String version) {
-        return client.getSecret(_vaultBase, secretName, version);
+    public SecretBundle getSessionSecret(String sessionSecretName, String version) {
+        return _client.getSecret(_config.getVaultBase(), sessionSecretName, version);
     }
 
-    public KeyBundle getKey(String keyName, String keyVersion) {
-        return client.getKey(_vaultBase, keyName, keyVersion);
+
+    public KeyBundle getSessionEncryptionKey(String sessionEncryptionKeyname, String keyVersion) {
+        return _client.getKey(_config.getVaultBase(), sessionEncryptionKeyname, keyVersion);
+    }
+
+    public KeyBundle getSessionEncryptionKey(String sessionEncryptionKeyname) {
+        return _client.getKey(_config.getVaultBase(), sessionEncryptionKeyname);
+    }
+
+    public SecretBundle createSessionSecret(String sessionEncryptionKeyname, String secretName) {
+
+        final KeyBundle keyBundle = getSessionEncryptionKey(sessionEncryptionKeyname);
+
+        final SetSecretRequest secretRequest = new SetSecretRequest.Builder(_config.getVaultBase(), secretName, generateSessionSecret(keyBundle))
+                .build();
+        return _client.setSecret(secretRequest);
+    }
+
+    private String generateSessionSecret(KeyBundle keyBundle) {
+        return null;
     }
 }
