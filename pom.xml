@@ -22,6 +22,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<azure.version>2.0.1</azure.version>
+		<azure.management.version>1.8.0</azure.management.version>
 		<java.version>9</java.version>
 	</properties>
 
@@ -33,6 +34,11 @@
 		<dependency>
 			<groupId>com.microsoft.azure</groupId>
 			<artifactId>azure-keyvault-secrets-spring-boot-starter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.microsoft.azure</groupId>
+			<artifactId>azure</artifactId>
+			<version>${azure.management.version}</version>
 		</dependency>
 
 		<dependency>
